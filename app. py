@@ -1,0 +1,113 @@
+import gradio as gr,asyncio,edge_tts,uuid,random,requests,re,os,json,base64,urllib.parse,datetime
+from moviepy.editor import VideoFileClip,ColorClip,concatenate_videoclips,AudioFileClip
+from PIL import Image
+B="JSM VIDEO GENERATOR";C="03043399133"
+K1="c2JfcHVibGlzaGFibGVfMVc0Tks2WDdFZGFjbV9lU0JJY0ZEUV9Da1Q2YzRFWQ=="
+K2="NTYzODYyOTMtMTRmYWNkOTRmZGFjMjZmOWZjMzdmNWYyYw=="
+K3="OGM4YzU5MmIwN2E1N2UwNWRjNDkzNjhiMzk5Yjc2NTk="
+K4=['Uk9LSnZmWXV1U2tjN1FWVkw2VmpDZ1lGeUI4VVFaQ0xMQ2N0RDJTZlRKY2xJckRHbzVFeDNKTVg2','em5pWXZhdmhhbDY2Vkd3dVYya1VJcFJtN3ZHM1kwcmRkREx1enJJVHZtUHFRMjZrZEcwdmN5eTA=','ZjZJS3hySFI4TUhqMWdlRDYyY3JMVGZEVFFYMHM3ZXdGa3czaEVJNGQ0Q2VuUlRaWENrcENXRDk=','MWo2a0ZxMUdSQjQyOTFGMXMxUk1naGxnSVgzZDN1NzhPYVRwaURLbXRJU0FqSmtLUGI5dlZUa0w=','dHBreXBvZ3N3djA3bjg0ZGgwaWFISTl0YW11NDNHRWN2Wm9rQTNYaTNKU1RVVDBOVjMyQTZnRzk=']
+def D(e):
+ try:return base64.b64decode(e.encode()).decode()
+ except:return""
+SK=D(K1);PK=D(K2);CK=D(K3);XK=[D(k) for k in K4]
+V={"English Male":"en-US-GuyNeural","English Female":"en-US-JennyNeural","Urdu Male":"ur-PK-AsadNeural","Urdu Female":"ur-PK-UzmaNeural","Hindi Male":"hi-IN-MadhurNeural"}
+L={"ASIF":100,"ALI":100,"JSM":100,"ASIF786":100,"JSM30":30,"JSM100":100,"JSM300":300,"JSM500":500,"JSM786":786,"GSM78":78}
+U="/tmp/jsm_usage.json";F="/tmp/free_daily.json"
+def Lj(p):
+ try:
+  if os.path.exists(p):return json.load(open(p))
+ except:pass
+ return{}
+def Sj(p,d):
+ try:json.dump(d,open(p,'w'))
+ except:pass
+def Kw(s):
+ l=s.lower()
+ m={"trump":"trump donald","biden":"joe biden","kisan":"farmer tractor","tractor":"tractor farming","khet":"farm field","kitchen":"kitchen cooking","biryani":"cooking kitchen","doctor":"doctor hospital","nurse":"nurse hospital","hospital":"hospital doctor","cricket":"cricket stadium","flood":"flood disaster","rain":"rain weather","war":"war military","police":"police"}
+ for k,v in m.items():
+  if k in l:return v
+ st={"hai","ka","ki","ke","ko","me","ne","aur","ye","wo","to","se","par","bhi","ek","wala","raha","is","the","and","in","on"}
+ w=re.findall(r'\w+',l);k=[x for x in w if x not in st and len(x)>2]
+ return" ".join(k[:3]) if k else l[:20]
+def Ai(p,path,W=960,H=540):
+ q=urllib.parse.quote(p[:600])
+ try:
+  r=requests.get(f"https://image.pollinations.ai/prompt/{q}?width={W}&height={H}&model=flux&nologo=true&seed={random.randint(1,999999)}",timeout=30)
+  if r.status_code==200 and len(r.content)>5000:open(path,'wb').write(r.content);return path
+ except:pass
+ Image.new('RGB',(W,H),color=(15,23,42)).save(path);return path
+def St(k,d,W=960,H=540):
+ q=Kw(k)
+ for key in XK:
+  try:
+   r=requests.get(f"https://api.pexels.com/videos/search?query={q}&per_page=1",headers={"Authorization":key},timeout=12)
+   ln=r.json()['videos'][0]['video_files'][0]['link'];t=f"/tmp/{uuid.uuid4().hex[:4]}.mp4";open(t,'wb').write(requests.get(ln,timeout=20).content)
+   return VideoFileClip(t).resize((W,H)).subclip(0,min(d,6))
+  except:continue
+ try:
+  if PK:
+   r=requests.get(f"https://pixabay.com/api/videos/?key={PK}&q={q}&per_page=3",timeout=12)
+   ln=r.json()['hits'][0]['videos']['medium']['url'];t=f"/tmp/{uuid.uuid4().hex[:4]}.mp4";open(t,'wb').write(requests.get(ln,timeout=20).content)
+   return VideoFileClip(t).resize((W,H)).subclip(0,min(d,6))
+ except:pass
+ return ColorClip((W,H),color=(20,40,80),duration=d)
+async def Tt(t,o,v):await edge_tts.Communicate(t,v).save(o)
+def Gen(email,code,script,lang,cat,vtype):
+ if not script.strip():return None,None,"","","","Script likho"
+ W,H=(540,960) if "TikTok" in vtype else(960,540)
+ code=code.strip().upper() if code else"";today=datetime.date.today().isoformat()
+ if code and code in L:
+  u=Lj(U);tot=L[code];used=u.get(code,0);rem=tot-used;free=False
+  if rem<=0:return None,None,"","","",f"Code {code} khatam! {C}"
+ else:
+  fd=Lj(F);ek=(email.strip().lower() or"anon")+"_"+today;ut=fd.get(ek,0)
+  if ut>=1:return None,None,"","","","Daily 1m free khatam! Kal ayen ya ASIF/ALI/JSM"
+  u=None;tot=1;rem=1-ut;free=True;ft=fd;et=ek
+ title=f"{script[:60]}";desc=f"{script[:400]}\n\n{B}";ht="#JSM"
+ try:
+  sents=[s.strip() for s in re.split(r'[.!?۔]+',script) if s.strip()];chs=[];cur=""
+  for s in sents:
+   cur+=s+". "
+   if len(cur)>600:chs.append(cur);cur=""
+  if cur:chs.append(cur)
+  if not chs:chs=[script]
+  chs=chs[:7];pvs=[];needT=0
+  for idx,ch in enumerate(chs):
+   ap=f"/tmp/{uuid.uuid4().hex[:4]}.mp3"
+   asyncio.run(Tt(ch,ap,V.get(lang,"en-US-GuyNeural")))
+   au=AudioFileClip(ap);nd=au.duration/60;needT+=nd
+   if needT>rem:return None,None,"","","",f"Need {needT:.1f}m Baki {rem:.1f}m"
+   if needT>22:break
+   per=au.duration/max(len(re.split(r'[.!?]+',ch)),1)
+   inn=[s.strip() for s in re.split(r'[.!?]+',ch) if s.strip()][0:5]
+   cl=[St(s,per,W,H).set_duration(per) for s in inn]
+   fn=concatenate_videoclips(cl,method="compose").set_audio(au)
+   vp=f"/tmp/P_{idx}_{uuid.uuid4().hex[:4]}.mp4"
+   fn.write_videofile(vp,fps=24,codec='libx264',audio_codec='aac',preset='ultrafast',bitrate='1200k',logger=None)
+   pvs.append(VideoFileClip(vp))
+  if not pvs:return None,None,"","","","Error parts"
+  fv=concatenate_videoclips(pvs,method="compose");vf=f"/tmp/F_{uuid.uuid4().hex[:4]}.mp4"
+  fv.write_videofile(vf,fps=24,codec='libx264',audio_codec='aac',preset='ultrafast',bitrate='1200k',logger=None)
+  tp=f"/tmp/T_{uuid.uuid4().hex[:4]}.jpg";Ai(script,tp,W,H)
+  if free:
+   ft[et]=ut+needT;Sj(F,ft)
+   return vf,tp,title,desc,ht,f"FREE Done:{needT:.1f}m Used:{ft[et]:.1f}/1.0"
+  else:
+   u[code]=used+needT;Sj(U,u);nr=tot-u[code]
+   return vf,tp,title,desc,ht,f"Done | {code} | Cut:{needT:.1f}m Baki:{nr:.1f}m 540p NO CUT"
+ except Exception as e:return None,None,"","","",f"Error:{e}"
+with gr.Blocks(title=B) as demo:
+ gr.Markdown(f"# {B} | 540p SMART | 20 MIN NO CUT | Daily 1 Min Free | {C}")
+ with gr.Row():
+  email=gr.Textbox(label="Email");code=gr.Textbox(label="Code ASIF/ALI/JSM=100min");lang=gr.Dropdown(list(V.keys()),value="English Male",label="Lang")
+ with gr.Row():
+  cat=gr.Dropdown(["Business","News","Politics Trump","Farming Kisan","Kitchen","Doctor","Trending"],value="Business",label="Cat");vtype=gr.Dropdown(["YouTube 16:9 540p","TikTok 9:16 540p"],value="YouTube 16:9 540p",label="Type")
+ script=gr.Textbox(lines=6,label="Script 20 MIN TAK - NO CUT",placeholder="Yahan 15-20 min kahani likho...")
+ btn=gr.Button("🎬 GENERATE 20 MIN VIDEO - NO CUT 540p",variant="primary")
+ with gr.Row():
+  video=gr.Video(label="Final Video");thumb=gr.Image(label="Thumb")
+ with gr.Row():
+  t1=gr.Textbox(label="Title");d1=gr.Textbox(label="Desc");h1=gr.Textbox(label="Tags")
+ status=gr.Textbox(label="Status")
+ btn.click(Gen,[email,code,script,lang,cat,vtype],[video,thumb,t1,d1,h1,status])
+demo.queue(max_size=50,default_concurrency_limit=2).launch(share=True,show_error=True,server_name="0.0.0.0")
